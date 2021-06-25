@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
+using System.IO;
+using RestSharp;
 
 namespace Shammill.LodeR.InputHandler
 {
@@ -18,6 +20,11 @@ namespace Shammill.LodeR.InputHandler
             string parameter = userInput.GetParameter();
             int numberOfRequests = Convert.ToInt32(parameter);
 
+            string requestMethodInput = userInput.GetParameter(2);
+            Method requestMethod = (Method)Enum.Parse(typeof(Method), requestMethodInput);
+            string cookieName = userInput.GetParameter(3);
+            string cookieValue = userInput.GetParameter(4);
+            string payload = GetJsonPayload();
 
             Console.WriteLine("Wakeup Starting");
             // This is to 'wake up' the server - sometimes the first request/s take a lot longer.
@@ -25,7 +32,7 @@ namespace Shammill.LodeR.InputHandler
                           async index =>
                           {
                               var client = new HttpClient();
-                              var result = await client.GetAsync(url);
+                              var result = await client.ExecuteRequest(url, cookieName, cookieValue, requestMethod, payload);
 
                               statuses.Add(client.Status);
                               responsesTimes.Add(client.ResponsesTime);
@@ -44,7 +51,7 @@ namespace Shammill.LodeR.InputHandler
                           async index =>
                           {
                               var client = new HttpClient();
-                              var result = await client.GetAsync(url);
+                              var result = await client.ExecuteRequest(url, cookieName, cookieValue, requestMethod, payload);
 
                               statuses.Add(client.Status);
                               responsesTimes.Add(client.ResponsesTime);
@@ -97,6 +104,25 @@ namespace Shammill.LodeR.InputHandler
 
             Console.WriteLine($"Min:{min}ms. Max:{max}ms. Median:{median}ms. Average:{average}ms.");
 
+        }
+
+
+        private static string GetJsonPayload()
+        {
+            return FileToMemory("payload.json");
+        }
+
+        public static string FileToMemory(string fileName)
+        {
+            string file = "";
+
+            if (File.Exists(fileName))
+                using (StreamReader sr = new StreamReader(fileName))
+                {
+                    file = sr.ReadToEnd();
+                }
+
+            return file;
         }
     }
 }
